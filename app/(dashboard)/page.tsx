@@ -72,22 +72,20 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="content-container p-6 space-y-6">
+      <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-4xl font-bold text-shadow-lg bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
-            Dashboard
-          </h1>
-          <div className="w-48 h-12 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 animate-pulse rounded-lg shadow-inner" />
+          <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
+          <div className="w-32 sm:w-48 h-10 bg-muted animate-pulse rounded-md" />
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <Card key={i} className="card-elevated">
-              <CardHeader className="space-y-0 pb-3">
-                <div className="h-4 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 animate-pulse rounded w-20" />
+            <Card key={i}>
+              <CardHeader className="space-y-0 pb-2">
+                <div className="h-4 bg-muted animate-pulse rounded w-20" />
               </CardHeader>
               <CardContent>
-                <div className="h-8 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 animate-pulse rounded w-24 mb-2" />
-                <div className="h-3 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 animate-pulse rounded w-32" />
+                <div className="h-8 bg-muted animate-pulse rounded w-24 mb-2" />
+                <div className="h-3 bg-muted animate-pulse rounded w-32" />
               </CardContent>
             </Card>
           ))}
@@ -98,18 +96,13 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="content-container p-6 space-y-6">
-        <h1 className="text-4xl font-bold text-shadow-lg bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
-          Dashboard
-        </h1>
-        <Card className="card-floating">
+      <div className="flex flex-col gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
+        <Card>
           <CardContent className="pt-6">
             <div className="text-center text-muted-foreground">
-              <p className="text-lg font-medium text-red-600 mb-2">Error loading dashboard: {error}</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-lg"
-              >
+              <p>Error loading dashboard: {error}</p>
+              <button onClick={() => window.location.reload()} className="mt-2 text-primary hover:underline">
                 Try again
               </button>
             </div>
@@ -121,14 +114,12 @@ export default function DashboardPage() {
 
   if (!data) {
     return (
-      <div className="content-container p-6 space-y-6">
-        <h1 className="text-4xl font-bold text-shadow-lg bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
-          Dashboard
-        </h1>
-        <Card className="card-floating">
+      <div className="flex flex-col gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
+        <Card>
           <CardContent className="pt-6">
             <div className="text-center text-muted-foreground">
-              <p className="text-lg font-medium">No data available</p>
+              <p>No data available</p>
             </div>
           </CardContent>
         </Card>
@@ -139,16 +130,16 @@ export default function DashboardPage() {
   const netSavings = data.totalIncome - data.totalExpenses
 
   return (
-    <div className="content-container p-6 space-y-8">
+    <div className="flex flex-col gap-4 sm:gap-6 lg:gap-8">
       {/* Header with Time Frame Selector */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold text-shadow-lg bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-shadow-lg bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
           Dashboard
         </h1>
-        <div className="flex items-center gap-3 glass-panel px-4 py-3 rounded-xl">
-          <Calendar className="h-5 w-5 text-muted-foreground" />
+        <div className="flex items-center gap-3 glass-panel px-3 py-2 sm:px-4 sm:py-3 rounded-xl">
+          <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
           <Select value={timeFrame} onValueChange={(value: TimeFrame) => setTimeFrame(value)}>
-            <SelectTrigger className="w-48 border-0 bg-transparent shadow-none focus:ring-2 focus:ring-primary/20">
+            <SelectTrigger className="w-32 sm:w-48 border-0 bg-transparent shadow-none focus:ring-2 focus:ring-primary/20">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="card-elevated">
@@ -163,17 +154,19 @@ export default function DashboardPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 xs:grid-cols-2 lg:grid-cols-4">
         <Card className="card-floating group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">Net Worth</CardTitle>
             <div className="p-2 bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-lg group-hover:from-blue-500/20 group-hover:to-blue-600/20 transition-all duration-300">
-              <DollarSign className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
             </div>
           </CardHeader>
           <CardContent>
             <div
-              className={`text-3xl font-bold mb-1 ${data.netWorth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+              className={`text-xl sm:text-2xl md:text-3xl font-bold mb-1 ${
+                data.netWorth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+              }`}
             >
               ${data.netWorth.toLocaleString()}
             </div>
@@ -187,11 +180,11 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Assets</CardTitle>
             <div className="p-2 bg-gradient-to-br from-green-500/10 to-green-600/10 rounded-lg group-hover:from-green-500/20 group-hover:to-green-600/20 transition-all duration-300">
-              <Building className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <Building className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-1">
+            <div className="text-xl sm:text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400 mb-1">
               ${data.totalAssets.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">Checking, savings, investments</p>
@@ -202,11 +195,11 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Liabilities</CardTitle>
             <div className="p-2 bg-gradient-to-br from-red-500/10 to-red-600/10 rounded-lg group-hover:from-red-500/20 group-hover:to-red-600/20 transition-all duration-300">
-              <CreditCard className="h-5 w-5 text-red-600 dark:text-red-400" />
+              <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 dark:text-red-400" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-1">
+            <div className="text-xl sm:text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400 mb-1">
               ${data.totalLiabilities.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">Credit cards, loans</p>
@@ -217,12 +210,14 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">Net Savings</CardTitle>
             <div className="p-2 bg-gradient-to-br from-purple-500/10 to-purple-600/10 rounded-lg group-hover:from-purple-500/20 group-hover:to-purple-600/20 transition-all duration-300">
-              <PiggyBank className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              <PiggyBank className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
             </div>
           </CardHeader>
           <CardContent>
             <div
-              className={`text-3xl font-bold mb-1 ${netSavings >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+              className={`text-xl sm:text-2xl md:text-3xl font-bold mb-1 ${
+                netSavings >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+              }`}
             >
               {netSavings >= 0 ? "+" : ""}${netSavings.toLocaleString()}
             </div>
@@ -234,10 +229,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 card-floating">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
+        <Card className="col-span-1 lg:col-span-4 card-floating">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold text-shadow">Budget Flow</CardTitle>
+            <CardTitle className="text-lg sm:text-xl font-semibold text-shadow">Budget Flow</CardTitle>
             <CardDescription className="text-muted-foreground">
               Visualize where your money comes from and where it goes ({timeFrameLabels[timeFrame].toLowerCase()})
             </CardDescription>
@@ -247,9 +242,9 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="col-span-3 card-floating">
+        <Card className="col-span-1 lg:col-span-3 card-floating">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold text-shadow">Spending by Category</CardTitle>
+            <CardTitle className="text-lg sm:text-xl font-semibold text-shadow">Spending by Category</CardTitle>
             <CardDescription className="text-muted-foreground">
               Your top spending categories ({timeFrameLabels[timeFrame].toLowerCase()})
             </CardDescription>
@@ -261,22 +256,22 @@ export default function DashboardPage() {
       </div>
 
       {/* Bottom Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 card-floating">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
+        <Card className="col-span-1 lg:col-span-4 card-floating">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold text-shadow">Recent Transactions</CardTitle>
+            <CardTitle className="text-lg sm:text-xl font-semibold text-shadow">Recent Transactions</CardTitle>
             <CardDescription className="text-muted-foreground">
               Your latest financial activity ({data.recentTransactions.length} transactions)
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-auto">
             <RecentTransactions data={data.recentTransactions} />
           </CardContent>
         </Card>
 
-        <Card className="col-span-3 card-floating">
+        <Card className="col-span-1 lg:col-span-3 card-floating">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold text-shadow">Net Worth Trend</CardTitle>
+            <CardTitle className="text-lg sm:text-xl font-semibold text-shadow">Net Worth Trend</CardTitle>
             <CardDescription className="text-muted-foreground">
               Track your financial growth ({timeFrameLabels[timeFrame].toLowerCase()})
             </CardDescription>

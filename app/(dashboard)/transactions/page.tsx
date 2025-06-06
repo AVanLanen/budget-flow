@@ -15,8 +15,6 @@ import { EditTransactionDialog } from "@/components/edit-transaction-dialog"
 import { CSVImportDialog } from "@/components/csv-import-dialog"
 import { Plus, FileUp, Loader2, Filter, Search, Edit, Trash } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-// Add these imports at the top with the other imports
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   AlertDialog,
@@ -382,7 +380,7 @@ export default function TransactionsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-6">
+      <div className="container mx-auto py-4 sm:py-6">
         <div className="flex justify-center items-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <span className="ml-2">Loading transactions...</span>
@@ -392,28 +390,35 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto py-4 sm:py-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Transactions</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Transactions</h1>
           <p className="text-muted-foreground">Manage and track your financial transactions</p>
         </div>
         {/* Modify the div that contains the action buttons (near the top of the component) */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           {selectedTransactions.length > 0 ? (
-            <Button variant="destructive" onClick={() => setShowDeleteDialog(true)} disabled={isProcessing}>
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteDialog(true)}
+              disabled={isProcessing}
+              className="w-full sm:w-auto"
+            >
               <Trash2 className="mr-2 h-4 w-4" />
               Delete {selectedTransactions.length} {selectedTransactions.length === 1 ? "Transaction" : "Transactions"}
             </Button>
           ) : (
             <>
-              <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+              <Button variant="outline" onClick={() => setIsImportDialogOpen(true)} className="flex-1 sm:flex-none">
                 <FileUp className="mr-2 h-4 w-4" />
-                Import CSV
+                <span className="hidden sm:inline">Import CSV</span>
+                <span className="sm:hidden">Import</span>
               </Button>
-              <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Button onClick={() => setIsAddDialogOpen(true)} className="flex-1 sm:flex-none">
                 <Plus className="mr-2 h-4 w-4" />
-                Add Transaction
+                <span className="hidden sm:inline">Add Transaction</span>
+                <span className="sm:hidden">Add</span>
               </Button>
             </>
           )}
@@ -421,11 +426,11 @@ export default function TransactionsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3 mb-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 mb-6">
         <Card>
           <CardContent className="pt-6">
             <div className="text-sm font-medium text-muted-foreground mb-2">Income</div>
-            <div className="text-2xl font-bold text-success">
+            <div className="text-xl sm:text-2xl font-bold text-success">
               ${summary.income.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </div>
           </CardContent>
@@ -433,7 +438,7 @@ export default function TransactionsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-sm font-medium text-muted-foreground mb-2">Expenses</div>
-            <div className="text-2xl font-bold text-destructive">
+            <div className="text-xl sm:text-2xl font-bold text-destructive">
               ${summary.expenses.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </div>
           </CardContent>
@@ -441,7 +446,7 @@ export default function TransactionsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-sm font-medium text-muted-foreground mb-2">Net</div>
-            <div className={`text-2xl font-bold ${summary.net >= 0 ? "text-success" : "text-destructive"}`}>
+            <div className={`text-xl sm:text-2xl font-bold ${summary.net >= 0 ? "text-success" : "text-destructive"}`}>
               ${summary.net.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </div>
           </CardContent>
@@ -449,7 +454,7 @@ export default function TransactionsPage() {
       </div>
 
       {/* Filters */}
-      <div className="grid gap-4 md:grid-cols-4 mb-6">
+      <div className="grid gap-4 grid-cols-1 xs:grid-cols-2 md:grid-cols-4 mb-6">
         <div>
           <Label htmlFor="search" className="sr-only">
             Search
@@ -521,7 +526,7 @@ export default function TransactionsPage() {
       </div>
 
       {/* Time Period Tabs */}
-      <Tabs defaultValue="all" className="w-full mb-6">
+      {/* <Tabs defaultValue="all" className="w-full mb-6">
         <TabsList>
           <TabsTrigger value="all" onClick={() => setTimeFilter("all")}>
             All Time
@@ -539,7 +544,7 @@ export default function TransactionsPage() {
             This Year
           </TabsTrigger>
         </TabsList>
-      </Tabs>
+      </Tabs> */}
 
       {/* Transactions Table */}
       {filteredTransactions.length === 0 ? (
@@ -567,77 +572,81 @@ export default function TransactionsPage() {
           </div>
         </div>
       ) : (
-        <div className="rounded-md border">
-          {/* Modify the TableHeader section to add a checkbox column */}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[50px]">
-                  <Checkbox
-                    checked={allSelected}
-                    onCheckedChange={toggleSelectAll}
-                    aria-label="Select all transactions"
-                  />
-                </TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Account</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {/* Modify the TableRow for each transaction to add a checkbox */}
-              {filteredTransactions.map((transaction) => (
-                <TableRow
-                  key={transaction.id}
-                  className={selectedTransactions.includes(transaction.id) ? "bg-muted/50" : ""}
-                >
-                  <TableCell>
+        <div className="rounded-md border overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50px]">
                     <Checkbox
-                      checked={selectedTransactions.includes(transaction.id)}
-                      onCheckedChange={(checked) => toggleSelectTransaction(transaction.id, !!checked)}
-                      aria-label={`Select transaction ${transaction.description}`}
+                      checked={allSelected}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Select all transactions"
                     />
-                  </TableCell>
-                  <TableCell className="font-medium">{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                  <TableCell>{transaction.description}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={getCategoryColor(transaction.category)}>
-                      {transaction.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{getAccountName(transaction.account_id)}</TableCell>
-                  <TableCell className={`text-right ${transaction.amount > 0 ? "text-success" : ""}`}>
-                    {transaction.amount > 0 ? "+" : ""}${Math.abs(transaction.amount).toFixed(2)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditingTransaction(transaction)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Edit className="h-4 w-4" />
-                        <span className="sr-only">Edit</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteTransaction(transaction.id)}
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                      >
-                        <Trash className="h-4 w-4" />
-                        <span className="sr-only">Delete</span>
-                      </Button>
-                    </div>
-                  </TableCell>
+                  </TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="hidden sm:table-cell">Description</TableHead>
+                  <TableHead className="hidden md:table-cell">Category</TableHead>
+                  <TableHead className="hidden lg:table-cell">Account</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="w-[100px]">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredTransactions.map((transaction) => (
+                  <TableRow
+                    key={transaction.id}
+                    className={selectedTransactions.includes(transaction.id) ? "bg-muted/50" : ""}
+                  >
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedTransactions.includes(transaction.id)}
+                        onCheckedChange={(checked) => toggleSelectTransaction(transaction.id, !!checked)}
+                        aria-label={`Select transaction ${transaction.description}`}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">
+                      {new Date(transaction.date).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell max-w-[200px] truncate">
+                      {transaction.description}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <Badge variant="outline" className={getCategoryColor(transaction.category)}>
+                        {transaction.category}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">{getAccountName(transaction.account_id)}</TableCell>
+                    <TableCell className={`text-right ${transaction.amount > 0 ? "text-success" : ""}`}>
+                      {transaction.amount > 0 ? "+" : ""}${Math.abs(transaction.amount).toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingTransaction(transaction)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Edit</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteTransaction(transaction.id)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        >
+                          <Trash className="h-4 w-4" />
+                          <span className="sr-only">Delete</span>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
 
