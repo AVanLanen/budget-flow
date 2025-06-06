@@ -1,31 +1,57 @@
-import { createServerClient as createSupabaseServerClient } from "@supabase/ssr"
+import { createClient } from "@supabase/supabase-js"
 import { cookies } from "next/headers"
-import type { Database } from "./database-types"
+import type { Database } from "./supabase"
 
-export async function createServerSupabaseClient() {
-  const cookieStore = await cookies()
+export function createServerClient() {
+  const cookieStore = cookies()
 
-  return createSupabaseServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  return createClient<Database>(
+    "https://vumlbhvbotswzbkxkjmv.supabase.co",
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
+      auth: {
+        getSession: async () => {
+          const authToken = cookieStore.get("sb-access-token")?.value
+          const refreshToken = cookieStore.get("sb-refresh-token")?.value
+
+          if (!authToken || !refreshToken) {
+            return { data: { session: null }, error: null }
+          }
+
+          return {
+            data: {
+              session: {
+                access_token: authToken,
+                refresh_token: refreshToken,
+                user: null,
+                token_type: "bearer",
+                expires_in: 3600,
+                expires_at: Date.now() + 3600 * 1000,
+              },
+            },
+            error: null,
+          }
         },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+        setSession: async (session) => {
+          if (session) {
+            cookieStore.set("sb-access-token", session.access_token, {
+              httpOnly: true,
+              secure: true,
+              sameSite: "lax",
+              maxAge: session.expires_in,
+            })
+            cookieStore.set("sb-refresh-token", session.refresh_token, {
+              httpOnly: true,
+              secure: true,
+              sameSite: "lax",
+              maxAge: 60 * 60 * 24 * 30, // 30 days
+            })
+          } else {
+            cookieStore.delete("sb-access-token")
+            cookieStore.delete("sb-refresh-token")
           }
         },
       },
     },
   )
 }
-
-// Export the createServerClient function as well for backward compatibility
-export const createServerClient = createServerSupabaseClient

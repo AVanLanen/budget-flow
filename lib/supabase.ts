@@ -1,15 +1,9 @@
-import { createBrowserClient } from "@supabase/ssr"
-import type { Database as DatabaseType } from "./database-types"
+import { createClient } from "@supabase/supabase-js"
 
-export function createClient() {
-  return createBrowserClient<DatabaseType>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
-}
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-// Legacy export for backward compatibility
-export const supabase = createClient()
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Types for our database tables
 export type Database = {
