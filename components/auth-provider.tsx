@@ -3,16 +3,15 @@
 import type React from "react"
 
 import { createContext, useContext, useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase"
 import type { User, Session } from "@supabase/supabase-js"
-import { supabase } from "@/lib/supabase"
-import { useRouter } from "next/navigation"
 
 interface AuthContextType {
   user: User | null
   session: Session | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<{ error: any }>
-  signUp: (email: string, password: string, name?: string) => Promise<{ error: any }>
+  signIn: (email: string, password: string) => Promise<{ error?: string }>
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>
   signOut: () => Promise<void>
 }
 
@@ -22,82 +21,142 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const supabase = createClient()
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+    const getInitialSession = async () => {
+      try {
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession()
+
+        if (error) {
+          console.error("Error getting session:", error)
+        } else {
+          setSession(session)
+          setUser(session?.user ?? null)
+        }
+      } catch (error) {
+        console.error("Error in getInitialSession:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    getInitialSession()
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, session?.user?.id)
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
-
-      if (event === "SIGNED_IN") {
-        // Create or update user profile
-        if (session?.user) {
-          await createUserProfile(session.user)
-        }
-      }
     })
 
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase.auth])
 
-  const createUserProfile = async (user: User) => {
-    const { error } = await supabase
-      .from("users")
-      .upsert({
-        id: user.id,
-        email: user.email!,
-        name: user.user_metadata?.name || null,
-        currency: "USD",
-        onboarding_completed: false,
-        updated_at: new Date().toISOString(),
+  const signIn = async (email: string, password: string) => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       })
-      .select()
 
-    if (error) {
-      console.error("Error creating user profile:", error)
+      if (error) {
+        console.error("Sign in error:", error)
+        return { error: error.message }
+      }
+
+      console.log("Sign in successful:", data.user?.id)
+      return {}
+    } catch (error) {
+      console.error("Unexpected sign in error:", error)
+      return { error: "An unexpected error occurred" }
+    } finally {
+      setLoading(false)
     }
   }
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    return { error }
-  }
-
-  const signUp = async (email: string, password: string, name?: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name: name || null,
+  const signUp = async (email: string, password: string, fullName: string) => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
         },
-      },
-    })
-    return { error }
+      })
+
+      if (error) {
+        console.error("Sign up error:", error)
+        return { error: error.message }
+      }
+
+      // Create user profile if sign up was successful
+      if (data.user) {
+        try {
+          const { error: profileError } = await supabase.from("profiles").insert({
+            id: data.user.id,
+            email: data.user.email!,
+            full_name: fullName,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+
+          if (profileError) {
+            console.error("Error creating profile:", profileError)
+            // Don't return error here as the user was created successfully
+          }
+        } catch (profileError) {
+          console.error("Unexpected error creating profile:", profileError)
+        }
+      }
+
+      console.log("Sign up successful:", data.user?.id)
+      return {}
+    } catch (error) {
+      console.error("Unexpected sign up error:", error)
+      return { error: "An unexpected error occurred" }
+    } finally {
+      setLoading(false)
+    }
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-    router.push("/login")
+    try {
+      setLoading(true)
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error("Sign out error:", error)
+      }
+    } catch (error) {
+      console.error("Unexpected sign out error:", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>{children}</AuthContext.Provider>
-  )
+  const value = {
+    user,
+    session,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

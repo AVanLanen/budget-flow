@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/components/auth-provider"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
@@ -21,23 +21,44 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
 
-    const { error } = await signIn(email, password)
-
-    if (error) {
+    if (!email || !password) {
       toast({
         title: "Error",
-        description: error.message,
+        description: "Please fill in all fields.",
         variant: "destructive",
       })
-      setIsLoading(false)
-    } else {
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const { error } = await signIn(email, password)
+
+      if (error) {
+        console.error("Login error:", error)
+        toast({
+          title: "Error",
+          description: error.message || "Failed to sign in. Please try again.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Success",
+          description: "You have been logged in successfully.",
+        })
+        router.push("/")
+      }
+    } catch (error) {
+      console.error("Unexpected login error:", error)
       toast({
-        title: "Success",
-        description: "You have been logged in successfully.",
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
       })
-      router.push("/")
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -72,6 +93,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
           <div className="space-y-2">
@@ -88,6 +110,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
           <Button className="w-full" type="submit" disabled={isLoading}>

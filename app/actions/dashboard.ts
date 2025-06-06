@@ -1,160 +1,179 @@
 "use server"
 
-import { createServerClient } from "@/lib/supabase-server"
+import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { LIABILITY_ACCOUNT_TYPES } from "@/lib/constants"
 
 export async function getDashboardData(timeFrame = "30d") {
-  const supabase = createServerClient()
+  try {
+    const supabase = createServerSupabaseClient()
 
-  // Get the current user
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
+    // Get the current user with better error handling
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
 
-  if (authError || !user) {
-    return { error: "Unauthorized" }
-  }
+    console.log("Auth check:", { user: user?.id, authError })
 
-  // Calculate date range based on timeFrame
-  const now = new Date()
-  const startDate = new Date()
+    if (authError) {
+      console.error("Auth error:", authError)
+      return { error: `Authentication error: ${authError.message}` }
+    }
 
-  switch (timeFrame) {
-    case "7d":
-      startDate.setDate(now.getDate() - 7)
-      break
-    case "30d":
-      startDate.setDate(now.getDate() - 30)
-      break
-    case "3m":
-      startDate.setMonth(now.getMonth() - 3)
-      break
-    case "6m":
-      startDate.setMonth(now.getMonth() - 6)
-      break
-    case "1y":
-      startDate.setFullYear(now.getFullYear() - 1)
-      break
-    default:
-      startDate.setDate(now.getDate() - 30)
-  }
+    if (!user) {
+      console.error("No user found")
+      return { error: "No authenticated user found" }
+    }
 
-  // Get accounts for net worth calculation
-  const { data: accounts, error: accountsError } = await supabase.from("accounts").select("*").eq("user_id", user.id)
+    // Calculate date range based on timeFrame
+    const now = new Date()
+    const startDate = new Date()
 
-  if (accountsError) {
-    console.error("Error fetching accounts:", accountsError)
-    return { error: accountsError.message }
-  }
+    switch (timeFrame) {
+      case "7d":
+        startDate.setDate(now.getDate() - 7)
+        break
+      case "30d":
+        startDate.setDate(now.getDate() - 30)
+        break
+      case "3m":
+        startDate.setMonth(now.getMonth() - 3)
+        break
+      case "6m":
+        startDate.setMonth(now.getMonth() - 6)
+        break
+      case "1y":
+        startDate.setFullYear(now.getFullYear() - 1)
+        break
+      default:
+        startDate.setDate(now.getDate() - 30)
+    }
 
-  // Get transactions for the selected time period
-  const { data: transactions, error: transactionsError } = await supabase
-    .from("transactions")
-    .select("*")
-    .eq("user_id", user.id)
-    .gte("date", startDate.toISOString().split("T")[0])
-    .order("date", { ascending: false })
+    console.log("Fetching accounts for user:", user.id)
 
-  if (transactionsError) {
-    console.error("Error fetching transactions:", transactionsError)
-    return { error: transactionsError.message }
-  }
+    // Get accounts for net worth calculation
+    const { data: accounts, error: accountsError } = await supabase.from("accounts").select("*").eq("user_id", user.id)
 
-  // Calculate net worth properly: Assets - Liabilities
-  let totalAssets = 0
-  let totalLiabilities = 0
+    if (accountsError) {
+      console.error("Error fetching accounts:", accountsError)
+      return { error: `Database error: ${accountsError.message}` }
+    }
 
-  console.log("Calculating net worth from accounts:", accounts)
+    console.log("Accounts found:", accounts?.length || 0)
 
-  if (accounts && accounts.length > 0) {
-    accounts.forEach((account) => {
-      const balance = Number.parseFloat(account.balance.toString())
-      const accountType = account.type
+    // Get transactions for the selected time period
+    const { data: transactions, error: transactionsError } = await supabase
+      .from("transactions")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("date", startDate.toISOString().split("T")[0])
+      .order("date", { ascending: false })
 
-      console.log(`Account: ${account.name}, Type: ${accountType}, Balance: ${balance}`)
+    if (transactionsError) {
+      console.error("Error fetching transactions:", transactionsError)
+      return { error: `Database error: ${transactionsError.message}` }
+    }
 
-      // Check if this account type is a liability
-      const isLiability = LIABILITY_ACCOUNT_TYPES.includes(accountType as any)
+    console.log("Transactions found:", transactions?.length || 0)
 
-      if (isLiability) {
-        // For liabilities (credit cards, loans), the balance reduces net worth
-        totalLiabilities += Math.abs(balance)
-        console.log(`Added to liabilities: ${Math.abs(balance)}`)
-      } else {
-        // Assets (checking, savings, investment) add to net worth
-        totalAssets += balance
-        console.log(`Added to assets: ${balance}`)
-      }
-    })
-  }
+    // Calculate net worth properly: Assets - Liabilities
+    let totalAssets = 0
+    let totalLiabilities = 0
 
-  const netWorth = totalAssets - totalLiabilities
+    console.log("Calculating net worth from accounts:", accounts)
 
-  console.log(
-    `Final calculation: Assets (${totalAssets}) - Liabilities (${totalLiabilities}) = Net Worth (${netWorth})`,
-  )
+    if (accounts && accounts.length > 0) {
+      accounts.forEach((account) => {
+        const balance = Number.parseFloat(account.balance.toString())
+        const accountType = account.type
 
-  // Calculate income and expenses from transactions
-  let totalIncome = 0
-  let totalExpenses = 0
-  const categorySpending: Record<string, number> = {}
+        console.log(`Account: ${account.name}, Type: ${accountType}, Balance: ${balance}`)
 
-  if (transactions && transactions.length > 0) {
-    transactions.forEach((transaction) => {
-      const amount = Number.parseFloat(transaction.amount.toString())
-      const category = transaction.category || "Other"
+        // Check if this account type is a liability
+        const isLiability = LIABILITY_ACCOUNT_TYPES.includes(accountType as any)
 
-      if (amount > 0) {
-        totalIncome += amount
-      } else {
-        totalExpenses += Math.abs(amount)
-        categorySpending[category] = (categorySpending[category] || 0) + Math.abs(amount)
-      }
-    })
-  }
+        if (isLiability) {
+          // For liabilities (credit cards, loans), the balance reduces net worth
+          totalLiabilities += Math.abs(balance)
+          console.log(`Added to liabilities: ${Math.abs(balance)}`)
+        } else {
+          // Assets (checking, savings, investment) add to net worth
+          totalAssets += balance
+          console.log(`Added to assets: ${balance}`)
+        }
+      })
+    }
 
-  // Calculate savings rate
-  const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0
+    const netWorth = totalAssets - totalLiabilities
 
-  // Get spending by category (top 6)
-  const spendingByCategory = Object.entries(categorySpending)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 6)
-    .map(([category, amount], index) => ({
-      category,
-      amount,
-      color:
-        [
-          "#F97316", // orange
-          "#EF4444", // red
-          "#8B5CF6", // purple
-          "#06B6D4", // cyan
-          "#84CC16", // lime
-          "#F59E0B", // amber
-        ][index] || "#6B7280",
-    }))
+    console.log(
+      `Final calculation: Assets (${totalAssets}) - Liabilities (${totalLiabilities}) = Net Worth (${netWorth})`,
+    )
 
-  // Generate net worth trend (mock data for now - would need historical account balances)
-  const netWorthTrend = generateNetWorthTrend(netWorth, timeFrame)
+    // Calculate income and expenses from transactions
+    let totalIncome = 0
+    let totalExpenses = 0
+    const categorySpending: Record<string, number> = {}
 
-  // Get recent transactions (last 10)
-  const recentTransactions = transactions?.slice(0, 10) || []
+    if (transactions && transactions.length > 0) {
+      transactions.forEach((transaction) => {
+        const amount = Number.parseFloat(transaction.amount.toString())
+        const category = transaction.category || "Other"
 
-  return {
-    data: {
-      netWorth,
-      totalAssets,
-      totalLiabilities,
-      totalIncome,
-      totalExpenses,
-      savingsRate,
-      spendingByCategory,
-      netWorthTrend,
-      recentTransactions,
-      accountsCount: accounts?.length || 0,
-      transactionsCount: transactions?.length || 0,
-    },
+        if (amount > 0) {
+          totalIncome += amount
+        } else {
+          totalExpenses += Math.abs(amount)
+          categorySpending[category] = (categorySpending[category] || 0) + Math.abs(amount)
+        }
+      })
+    }
+
+    // Calculate savings rate
+    const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0
+
+    // Get spending by category (top 6)
+    const spendingByCategory = Object.entries(categorySpending)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 6)
+      .map(([category, amount], index) => ({
+        category,
+        amount,
+        color:
+          [
+            "#F97316", // orange
+            "#EF4444", // red
+            "#8B5CF6", // purple
+            "#06B6D4", // cyan
+            "#84CC16", // lime
+            "#F59E0B", // amber
+          ][index] || "#6B7280",
+      }))
+
+    // Generate net worth trend (mock data for now - would need historical account balances)
+    const netWorthTrend = generateNetWorthTrend(netWorth, timeFrame)
+
+    // Get recent transactions (last 10)
+    const recentTransactions = transactions?.slice(0, 10) || []
+
+    return {
+      data: {
+        netWorth,
+        totalAssets,
+        totalLiabilities,
+        totalIncome,
+        totalExpenses,
+        savingsRate,
+        spendingByCategory,
+        netWorthTrend,
+        recentTransactions,
+        accountsCount: accounts?.length || 0,
+        transactionsCount: transactions?.length || 0,
+      },
+    }
+  } catch (error) {
+    console.error("Unexpected error in getDashboardData:", error)
+    return { error: `Unexpected error: ${error instanceof Error ? error.message : "Unknown error"}` }
   }
 }
 
