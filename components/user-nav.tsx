@@ -1,49 +1,48 @@
-"use client"
-
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import type { Session } from "next-auth"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useAuth } from "@/components/auth-provider"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
+import Link from "next/link"
 
-export function UserNav() {
-  const { user, signOut } = useAuth()
+interface UserNavProps {
+  session: Session | null
+}
 
-  if (!user) return null
-
-  const initials = user.email?.slice(0, 2).toUpperCase() || "U"
+export async function UserNav() {
+  const session = await getServerSession(authOptions)
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={user.user_metadata?.avatar_url || "/placeholder.svg"} alt={user.email || "User"} />
-            <AvatarFallback>{initials}</AvatarFallback>
+            <AvatarImage
+              src={(session?.user?.image as string) || "/placeholder.svg"}
+              alt={session?.user?.name as string}
+            />
+            <AvatarFallback>{session?.user?.name?.charAt(0)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.user_metadata?.name || "User"}</p>
-            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-          </div>
-        </DropdownMenuLabel>
+        <DropdownMenuItem asChild>
+          <Link href="/profile">Profile</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/settings">Settings</Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem>Profile</DropdownMenuItem>
-          <DropdownMenuItem>Settings</DropdownMenuItem>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={signOut}>Log out</DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/api/auth/signout">Logout</Link>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
